@@ -36,7 +36,7 @@ function Register({ onSwitchToLogin }: RegisterProps) {
           <div className="form-group">
             <label htmlFor="password">Mật khẩu</label>
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
