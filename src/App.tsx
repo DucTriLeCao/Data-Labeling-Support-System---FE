@@ -1,15 +1,32 @@
 import { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ConfigProvider } from 'antd';
+import viVN from 'antd/locale/vi_VN';
 import './App.css';
 import Register from './Register';
+import AdminLayout from './layouts/AdminLayout';
+import Dashboard from './pages/Dashboard';
+import ProjectManagement from './pages/ProjectManagement';
+import UserManagement from './pages/UserManagement';
+import TaskList from './pages/TaskList';
 
-function Login({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
+function Login({ onSwitchToRegister, onLogin }: { onSwitchToRegister: () => void; onLogin: (role: 'admin' | 'manager' | 'annotator' | 'reviewer') => void }) {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login:', { email, password });
+    // Simulate login with different roles based on email
+    if (email.includes('admin')) {
+      onLogin('admin');
+    } else if (email.includes('manager')) {
+      onLogin('manager');
+    } else if (email.includes('reviewer')) {
+      onLogin('reviewer');
+    } else {
+      onLogin('annotator');
+    }
   };
 
   return (
@@ -76,13 +93,53 @@ function Login({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
 }
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'login' | 'register'>('login');
+  const [currentPage, setCurrentPage] = useState<'login' | 'register' | 'dashboard'>('login');
+  const [userRole, setUserRole] = useState<'admin' | 'manager' | 'annotator' | 'reviewer'>('annotator');
+
+  const handleLogin = (role: 'admin' | 'manager' | 'annotator' | 'reviewer') => {
+    setUserRole(role);
+    setCurrentPage('dashboard');
+  };
+
+  const handleLogout = () => {
+    setCurrentPage('login');
+  };
 
   if (currentPage === 'register') {
     return <Register onSwitchToLogin={() => setCurrentPage('login')} />;
   }
 
-  return <Login onSwitchToRegister={() => setCurrentPage('register')} />;
+  if (currentPage === 'dashboard') {
+    return (
+      <ConfigProvider locale={viVN} theme={{ token: { colorPrimary: '#6366f1' } }}>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<AdminLayout userRole={userRole} onLogout={handleLogout} />}>
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard userRole={userRole} />} />
+              {/* Admin routes */}
+              <Route path="users" element={<UserManagement />} />
+              <Route path="settings" element={<div>Cấu hình hệ thống</div>} />
+              <Route path="logs" element={<div>Nhật ký hoạt động</div>} />
+              {/* Manager routes */}
+              <Route path="projects" element={<ProjectManagement />} />
+              <Route path="datasets" element={<div>Quản lý bộ dữ liệu</div>} />
+              <Route path="labels" element={<div>Thiết lập bộ nhãn</div>} />
+              <Route path="assignments" element={<div>Phân công công việc</div>} />
+              {/* Annotator routes */}
+              <Route path="tasks" element={<TaskList userRole="annotator" />} />
+              <Route path="labeling" element={<div>Gán nhãn</div>} />
+              {/* Reviewer routes */}
+              <Route path="review" element={<TaskList userRole="reviewer" />} />
+              <Route path="review-history" element={<div>Lịch sử kiểm duyệt</div>} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </ConfigProvider>
+    );
+  }
+
+  return <Login onSwitchToRegister={() => setCurrentPage('register')} onLogin={handleLogin} />;
 }
 
 export default App;
